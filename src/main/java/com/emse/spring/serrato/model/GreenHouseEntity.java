@@ -38,10 +38,12 @@ public class GreenHouseEntity {
     public GreenHouseEntity() {
     }
 
-    public GreenHouseEntity(String name, SensorEntity currentTemperature, Double targetTemperature) {
+    public GreenHouseEntity(String name, SensorEntity currentTemperature, Double targetTemperature, SensorEntity currentHumidity, FieldEntity field) {
         this.name = name;
         this.currentTemperature = currentTemperature;
         this.targetTemperature = targetTemperature;
+        this.currentHumidity = currentHumidity;
+        this.field = field;
     }
 
     // Méthodes pour gérer la liste de chauffages
@@ -107,4 +109,9 @@ public class GreenHouseEntity {
     public void setField(FieldEntity field) {
         this.field = field;
     }
+
+    public List<HeaterEntity> getHeaters() {
+        return heaters;
+    }
+
 }

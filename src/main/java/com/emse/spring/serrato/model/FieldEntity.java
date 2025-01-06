@@ -33,12 +33,12 @@ public class FieldEntity {
     }
 
     // Methods to manage the relationship with greenhouses
-    public void addGreenhouse(GreenHouseEntity greenhouse) {
+    public void addGreenHouse(GreenHouseEntity greenhouse) {
         greenhouses.add(greenhouse);
         greenhouse.setField(this); // Set the field reference in GreenHouseEntity
     }
 
-    public void removeGreenhouse(GreenHouseEntity greenhouse) {
+    public void removeGreenHouse(GreenHouseEntity greenhouse) {
         greenhouses.remove(greenhouse);
         greenhouse.setField(null); // Remove the field reference
     }
