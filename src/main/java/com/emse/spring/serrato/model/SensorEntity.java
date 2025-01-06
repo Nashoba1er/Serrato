@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 
 @Entity // .
 @Table(name = "SP_SENSOR") // .
-public class SensorEntity {
+public class SensorEntity{
     @Id // .
     @GeneratedValue
     private Long id;
