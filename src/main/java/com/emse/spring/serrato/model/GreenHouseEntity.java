@@ -57,6 +57,29 @@ public class GreenHouseEntity {
         heater.setGreenhouse(null); // Maintenir la cohérence bidirectionnelle
     }
 
+    // Ajouter cette méthode dans GreenHouseEntity
+    public void setHeaters(List<HeaterEntity> newHeaters) {
+        if (this.heaters == null) {
+            this.heaters = new ArrayList<>();
+        }
+
+        // Dissocier les chauffages qui ne sont plus dans la nouvelle liste
+        for (HeaterEntity existingHeater : new ArrayList<>(this.heaters)) {
+            if (!newHeaters.contains(existingHeater)) {
+                existingHeater.setGreenhouse(null); // Supprimer l'association
+                this.heaters.remove(existingHeater); // Retirer de la collection
+            }
+        }
+
+        // Ajouter ou mettre à jour les chauffages dans la collection
+        for (HeaterEntity newHeater : newHeaters) {
+            if (!this.heaters.contains(newHeater)) {
+                newHeater.setGreenhouse(this); // Associer à cette serre
+                this.heaters.add(newHeater); // Ajouter à la collection
+            }
+        }
+    }
+
     // Getters et setters
     public Long getId() {
         return this.id;

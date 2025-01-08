@@ -8,15 +8,23 @@ import java.util.stream.Collectors;
 
 public class GreenHouseMapper {
     public static GreenHouse toRecord(GreenHouseEntity greenHouseEntity) {
-        // Mapper les capteurs de température et d'humidité
-        Sensor humiditySensor = SensorMapper.toRecord(greenHouseEntity.getField().getOutsideTemperature()); // Exemple, à adapter si besoin
-        Sensor temperatureSensor = SensorMapper.toRecord(greenHouseEntity.getCurrentTemperature());
+        // Vérifier que les capteurs sont non nulls avant de les mapper
+        Sensor humiditySensor = null;
+        if (greenHouseEntity.getCurrentHumidity() != null) {
+            humiditySensor = SensorMapper.toRecord(greenHouseEntity.getCurrentHumidity());
+        }
+
+        Sensor temperatureSensor = null;
+        if (greenHouseEntity.getCurrentTemperature() != null) {
+            temperatureSensor = SensorMapper.toRecord(greenHouseEntity.getCurrentTemperature());
+        }
 
         // Mapper la liste des radiateurs
         List<Heater> heaters = greenHouseEntity.getHeaters().stream()
                 .map(HeaterMapper::toRecord) // Utilisation du HeaterMapper pour chaque HeaterEntity
                 .collect(Collectors.toList());
 
+        // Retourner l'objet GreenHouse avec tous les capteurs et chauffages
         return new GreenHouse(
                 greenHouseEntity.getId(),
                 greenHouseEntity.getName(),
@@ -27,4 +35,5 @@ public class GreenHouseMapper {
         );
     }
 }
+
 
