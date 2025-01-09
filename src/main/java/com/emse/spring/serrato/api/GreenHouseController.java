@@ -137,39 +137,39 @@ public class GreenHouseController {
                     return sensorDao.save(newSensor);
                 });
 
-        // Vérifier ou créer les chauffages associés
-        List<HeaterEntity> heaters = command.heaters().stream()
-                .map(heaterCommand -> heaterDao.findById(heaterCommand.id())
-                        .orElseGet(() -> {
-                            // Récupérer ou créer un capteur de statut pour le chauffage
-                            SensorEntity statusSensor = sensorDao.findById(heaterCommand.statusSensor().id())
-                                    .orElseGet(() -> {
-                                        SensorEntity newSensor = new SensorEntity(
-                                                heaterCommand.statusSensor().sensorType(),
-                                                heaterCommand.statusSensor().name()
-                                        );
-                                        newSensor.setValue(heaterCommand.statusSensor().sensorValue());
-                                        return sensorDao.save(newSensor);
-                                    });
-
-                            // Créer le chauffage
-                            HeaterEntity newHeater = new HeaterEntity();
-                            newHeater.setId(heaterCommand.id());
-                            newHeater.setName(heaterCommand.name() != null ? heaterCommand.name() : "Default Heater");
-                            newHeater.setStatus(statusSensor);
-                            return heaterDao.save(newHeater);
-                        }))
-                .collect(Collectors.toList());
-
         // Créer l'entité Greenhouse
         GreenHouseEntity greenhouse = new GreenHouseEntity();
         greenhouse.setName(command.name());
         greenhouse.setTargetTemperature(command.targetTemperature());
         greenhouse.setCurrentTemperature(temperatureSensor);
         greenhouse.setCurrentHumidity(humiditySensor);
-
-        // Associer les chauffages
-        greenhouse.setHeaters(heaters);
+//
+//        // Vérifier ou créer les chauffages associés
+//        List<HeaterEntity> heaters = command.heaters().stream()
+//                .map(heaterCommand -> heaterDao.findById(heaterCommand.id())
+//                        .orElseGet(() -> {
+//                            // Récupérer ou créer un capteur de statut pour le chauffage
+//                            SensorEntity statusSensor = sensorDao.findById(heaterCommand.statusSensor().id())
+//                                    .orElseGet(() -> {
+//                                        SensorEntity newSensor = new SensorEntity(
+//                                                SensorType.STATUS,
+//                                                heaterCommand.statusSensor().name()
+//                                        );
+//                                        newSensor.setValue(heaterCommand.statusSensor().sensorValue());
+//                                        return sensorDao.save(newSensor);
+//                                    });
+//
+//                            // Créer le chauffage
+//                            HeaterEntity newHeater = new HeaterEntity();
+//                            newHeater.setId(heaterCommand.id());
+//                            newHeater.setName(heaterCommand.name() != null ? heaterCommand.name() : "Default Heater");
+//                            newHeater.setStatus(statusSensor);
+//                            return heaterDao.save(newHeater);
+//                        }))
+//                .collect(Collectors.toList());
+//
+//        // Associer les chauffages
+//        greenhouse.setHeaters(heaters);
 
         // Sauvegarder la serre
         GreenHouseEntity savedGreenhouse = greenHouseDao.save(greenhouse);
@@ -177,9 +177,7 @@ public class GreenHouseController {
         return ResponseEntity.status(HttpStatus.CREATED).body(savedGreenhouse);
     }
 
-
-
-
+    // attention put ne modifie pas les heaters, que la serre et les capteurs de celle-ci
     @PutMapping("/{id}")
     public ResponseEntity<GreenHouse> update(@PathVariable Long id, @RequestBody GreenHouseCommand greenHouseCommand) {
         // Récupérer la serre existante
@@ -190,49 +188,29 @@ public class GreenHouseController {
         existingGreenHouse.setName(greenHouseCommand.name());
         existingGreenHouse.setTargetTemperature(greenHouseCommand.targetTemperature());
 
-        // Mettre à jour les capteurs
+        // Mettre à jour ou créer les capteurs associés
         SensorEntity temperatureSensor = sensorDao.findById(greenHouseCommand.temperatureSensor().id())
-                .orElseThrow(() -> new RuntimeException("Temperature sensor not found"));
+                .orElseGet(() -> {
+                    SensorEntity newSensor = new SensorEntity(SensorType.TEMPERATURE, "Temperature Sensor " + greenHouseCommand.temperatureSensor().id());
+                    newSensor.setValue(greenHouseCommand.temperatureSensor().sensorValue());
+                    return sensorDao.save(newSensor);
+                });
         existingGreenHouse.setCurrentTemperature(temperatureSensor);
 
         SensorEntity humiditySensor = sensorDao.findById(greenHouseCommand.humiditySensor().id())
-                .orElseThrow(() -> new RuntimeException("Humidity sensor not found"));
+                .orElseGet(() -> {
+                    SensorEntity newSensor = new SensorEntity(SensorType.HUMIDITY, "Humidity Sensor " + greenHouseCommand.humiditySensor().id());
+                    newSensor.setValue(greenHouseCommand.humiditySensor().sensorValue());
+                    return sensorDao.save(newSensor);
+                });
         existingGreenHouse.setCurrentHumidity(humiditySensor);
 
-        // Mettre à jour les chauffages
-        List<HeaterEntity> updatedHeaters = new ArrayList<>();
-        for (HeaterCommand heaterCommand : greenHouseCommand.heaters()) {
-            HeaterEntity heaterEntity;
+        // NE PAS modifier les chauffages ici. Les chauffages existants sont conservés tels quels.
 
-            if (heaterCommand.id() != null) {
-                // Mettre à jour un chauffage existant
-                heaterEntity = heaterDao.findById(heaterCommand.id())
-                        .orElseThrow(() -> new RuntimeException("Heater not found"));
-                heaterEntity.setName(heaterCommand.name());
+        // Sauvegarder les modifications de la serre
+        GreenHouseEntity updatedGreenHouse = greenHouseDao.save(existingGreenHouse);
 
-                // Mettre à jour le capteur de statut
-                SensorEntity statusSensor = sensorDao.findById(heaterCommand.statusSensor().id())
-                        .orElseThrow(() -> new RuntimeException("Status sensor not found"));
-                heaterEntity.setStatus(statusSensor);
-            } else {
-                // Ajouter un nouveau chauffage
-                SensorEntity statusSensor = sensorDao.findById(heaterCommand.statusSensor().id())
-                        .orElseThrow(() -> new RuntimeException("Status sensor not found"));
-                heaterEntity = new HeaterEntity(
-                        heaterCommand.name(),
-                        existingGreenHouse,
-                        statusSensor
-                );
-            }
-            updatedHeaters.add(heaterEntity);
-        }
-
-        // Remplacer les chauffages existants par les nouveaux
-        existingGreenHouse.setHeaters(updatedHeaters);
-
-        // Sauvegarder la serre mise à jour
-        GreenHouseEntity savedEntity = greenHouseDao.save(existingGreenHouse);
-        return ResponseEntity.ok(GreenHouseMapper.toRecord(savedEntity));
+        return ResponseEntity.ok(GreenHouseMapper.toRecord(updatedGreenHouse));
     }
 
 
